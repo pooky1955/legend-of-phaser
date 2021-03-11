@@ -9,7 +9,7 @@ const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
 
 export class MainScene extends Phaser.Scene {
   //private cursorKeys : Phaser.Types.Input.Keyboard.CursorKeys;
-  private player : Player = new Player(this);
+  private player : Player;
   private map : Phaser.Tilemaps.Tilemap;
   private backgroundPaths = ['CloudsBack','CloudsFront','BGBack','BGFront'];
   private platforms : Phaser.Tilemaps.TilemapLayer
@@ -21,7 +21,13 @@ export class MainScene extends Phaser.Scene {
   loadBGs(){
     this.backgroundPaths.forEach(imagePath => {
       const img = this.add.image(0,0,imagePath)
-      img.setScale(4,4)
+      // img.setOrigin(0,0)
+      img.setScale(3.1,3.1)
+    })
+    this.backgroundPaths.forEach(imagePath => {
+      const img = this.add.image(800,0,imagePath)
+      // img.setOrigin(0,0)
+      img.setScale(3.1,3.1)
     })
   }
 
@@ -36,15 +42,17 @@ export class MainScene extends Phaser.Scene {
   }
 
   loadPlayer(){
+    this.player = new Player(this)
     const objectLayer = this.map.getObjectLayer("Spawn")
     const {x,y} = objectLayer.objects[0]
     Player.generatePlayerAnims(this)
-    this.player.spawn(x,y)
+    this.player.spawn(x,0)
     this.player.addPlatforms(this.platforms)
     console.log(objectLayer)
     console.log({x,y})
 
   }
+
 
   public create() : void {
     this.loadBGs()
@@ -64,6 +72,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   public update() : void {
+    this.player.handleKeys()
   }
 
 }
