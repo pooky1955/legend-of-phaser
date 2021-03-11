@@ -12,6 +12,7 @@
     "build:prod": "NODE_ENV=production webpack",
     "dev": "NODE_ENV=development webpack-dev-server",
     "prod": "NODE_ENV=production webpack-dev-server",
+    "deploy" : "NODE_ENV=production webpack && cp CNAME dist/ && surge dist/",
     "lint": "eslint src"
   },
   "dependencies": {

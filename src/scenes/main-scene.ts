@@ -11,6 +11,8 @@ export class MainScene extends Phaser.Scene {
   //private cursorKeys : Phaser.Types.Input.Keyboard.CursorKeys;
   private player : Player;
   private map : Phaser.Tilemaps.Tilemap;
+  private mapWidth : number;
+  private mapHeight : number;
   private backgroundPaths = ['CloudsBack','CloudsFront','BGBack','BGFront'];
   private platforms : Phaser.Tilemaps.TilemapLayer
 
@@ -18,27 +20,38 @@ export class MainScene extends Phaser.Scene {
     super(sceneConfig)
   }
   
-  loadBGs(){
+  loadBGs(mapWidth,mapHeight){
     this.backgroundPaths.forEach(imagePath => {
-      const img = this.add.image(0,0,imagePath)
-      // img.setOrigin(0,0)
-      img.setScale(3.1,3.1)
+      for (let i = 0; i <= 1 ; i++){
+        const img = this.add.image(0,0,imagePath)
+        img.setOrigin(0,0)
+        const scaleFactor = mapHeight / img.displayHeight
+        img.setScale(scaleFactor,scaleFactor)
+        img.setX(i * img.displayWidth)
+
+      }
     })
-    this.backgroundPaths.forEach(imagePath => {
-      const img = this.add.image(800,0,imagePath)
-      // img.setOrigin(0,0)
-      img.setScale(3.1,3.1)
-    })
+    // this.backgroundPaths.forEach(imagePath => {
+    //   const img = this.add.image(100000,getGameHeight(this),imagePath)
+    //   img.setOrigin(0,1)
+    //   img.setScale(3.1,3.1)
+    // })
   }
 
   loadMap(){
     this.map = this.make.tilemap({key : 'level1'})
     const tileset = this.map.addTilesetImage('standard_tiles','base_tiles')
     const layer = this.map.createLayer("Ground",tileset)
+    const [width,height] = [layer.layer.widthInPixels, layer.layer.heightInPixels]
+    this.mapWidth = width
+    this.mapHeight = height
     this.platforms = layer
     layer.setCollisionByExclusion([-1],true)
     layer.setOrigin(0,0)
     layer.setPosition(0,0)
+    const WALL_TILES = []
+    layer.depth = 500
+    this.loadBGs(width,height)
   }
 
   loadPlayer(){
@@ -46,23 +59,24 @@ export class MainScene extends Phaser.Scene {
     const objectLayer = this.map.getObjectLayer("Spawn")
     const {x,y} = objectLayer.objects[0]
     Player.generatePlayerAnims(this)
-    this.player.spawn(x,0)
+    this.player.spawn(x,y)
+    this.player.setWorldDims(this.mapWidth,this.mapHeight)
     this.player.addPlatforms(this.platforms)
-    console.log(objectLayer)
-    console.log({x,y})
+    this.physics.world.setBounds(0,0,this.mapWidth,this.mapHeight)
+    this.player.getSprite().setCollideWorldBounds(true)
+    this.cameras.main.startFollow(this.player.getSprite())
+    
 
   }
 
 
   public create() : void {
-    this.loadBGs()
     this.loadMap()
     this.loadPlayer()
   }
 
   public preload() : void {
     const loadAsset = (file : string) => this.load.image(file,`assets/maps/${file}.png`)
-    console.log('preloading stuff')
     this.load.image('base_tiles','assets/maps/Tileset.png')
     this.load.tilemapTiledJSON('level1','assets/maps/level1.json')
     this.backgroundPaths.forEach(loadAsset)

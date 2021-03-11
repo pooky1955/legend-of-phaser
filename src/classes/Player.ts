@@ -1,6 +1,7 @@
 import { charMapping } from '../data/charFrames';
 import { charAnims } from '../data/charAnims';
 import { animsCount } from '../data/animsCount';
+import { animsRate, defaultRate } from "../data/animsRate"
 import { log } from '../helpers';
 
 const getFrame = (path, index = 1) => {
@@ -26,12 +27,12 @@ const sizes = {
     ],
     [PLAYER_STATE.Crouching]: [
         [
-            [26, 36 - 18],
-            [15, 28 + 18],
+            [26, 36 - 20],
+            [15, 28 + 20],
         ],
         [
-            [26, 36 - 18],
-            [23, 28 + 18],
+            [26, 36 - 20],
+            [23, 28 + 20],
         ],
     ],
     [PLAYER_STATE.Walling]: [
@@ -50,30 +51,36 @@ export class Player {
     private scene: Phaser.Scene;
     private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
     private state: PLAYER_STATE;
+    private jumpLock : boolean = false;
     private RUN_SPEED: number = 40;
-    private JUMP_SPEED: number = -200;
+    private JUMP_SPEED: number = -300;
     private STOMP_SPEED: number = 60;
     private MAX_STOMP_SPEED: number = 600;
     private MAX_RUN_SPEED: number = 300;
     private WALL_DAMPING: number = 0.7;
-    private WALL_JUMP_SPEED: number = 300;
+    private WALL_JUMP_SPEED: number = 150;
     private currAnim: string = charAnims.idle;
     private locked: boolean = false;
     private PLAYER_WIDTH: number;
     private PLAYER_HEIGHT: number;
+    private MAP_WIDTH : number;
+    private MAP_HEIGHT : number;
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
-        console.log(scene);
         this.cursors = scene.input.keyboard.createCursorKeys();
+    }
+
+    public setWorldDims(width,height){
+        this.MAP_WIDTH = width
+        this.MAP_HEIGHT = height
     }
 
     spawn(x: number, y: number) {
         const idlePath = getFrame(charMapping.idle);
-        console.log(idlePath);
         this.sprite = this.scene.physics.add.sprite(x, y, 'character', getFrame(charMapping.idle));
-        this.sprite.setCollideWorldBounds(true);
         this.PLAYER_HEIGHT = JSON.parse(JSON.stringify(this.sprite.body.height));
         this.PLAYER_WIDTH = JSON.parse(JSON.stringify(this.sprite.body.width));
+        this.setBodySize(PLAYER_STATE.Standing);
     }
     setBodySize(state) {
         this.state = state;
@@ -83,8 +90,11 @@ export class Player {
     }
 
     addPlatforms(platforms: Phaser.Tilemaps.TilemapLayer) {
-        this.scene.physics.add.collider(this.sprite, platforms);
+        this.scene.physics.add.collider(this.sprite, platforms,(sprite,platforms) => {
+            debugger
+        })
     }
+
 
     public static generatePlayerAnims(scene: Phaser.Scene) {
         const range = (n) => new Array(n).fill(0).map((_, i) => i);
@@ -94,15 +104,17 @@ export class Player {
         Object.keys(charAnims).forEach((animName) => {
             const fullAnimName = charMapping[animName];
             const animCount = animsCount[fullAnimName];
+            const rate = animName in animsRate ? animsRate[animName] : defaultRate
             const frames = generateFrames(fullAnimName, animCount);
-            scene.anims.create({ frames: frames, frameRate: 24, repeat: -1, key: animName });
+            scene.anims.create({ frames: frames, frameRate: rate, repeat: -1, key: animName });
             log(`frames are of ${JSON.stringify(frames)}`);
         });
     }
 
-    public getSprite(): Phaser.GameObjects.Sprite {
+    public getSprite(): Phaser.Types.Physics.Arcade.SpriteWithDynamicBody {
         return this.sprite;
     }
+
 
     lock(time: number) {
         this.locked = true;
@@ -121,6 +133,12 @@ export class Player {
         }
     }
 
+    updateVelocityX(number){
+        this.sprite.body.setVelocityX(number + this.sprite.body.velocity.x)
+    }
+    updateVelocityY(number){
+        this.sprite.body.setVelocityY(number + this.sprite.body.velocity.y)
+    }
     handleKeys() {
         if (this.locked) {
             return;
@@ -133,15 +151,15 @@ export class Player {
         const moveAnim = downKeyPressed ? charAnims.roll : charAnims.run;
         const isJump = this.cursors.space.isDown || this.cursors.up.isDown;
         const wannaJump = isJump && onFloor;
-        const bodySize = downKeyPressed ? PLAYER_STATE.Crouching : PLAYER_STATE.Standing
+        const bodySize = downKeyPressed  ? PLAYER_STATE.Crouching : PLAYER_STATE.Standing
         if (isLeft) {
-            this.sprite.body.velocity.x -= this.RUN_SPEED;
+            this.updateVelocityX(-this.RUN_SPEED) 
             if (this.sprite.body.onFloor()) {
                 this.playAnim(moveAnim);
                 this.setBodySize(bodySize);
             }
         } else if (isRight) {
-            this.sprite.body.velocity.x += this.RUN_SPEED;
+            this.updateVelocityX(this.RUN_SPEED)
             if (this.sprite.body.onFloor()) {
                 this.playAnim(moveAnim);
                 this.setBodySize(bodySize);
@@ -149,7 +167,11 @@ export class Player {
         } else {
             this.sprite.setVelocityX(0);
             if (onFloor) {
-                this.playAnim(charAnims.idle);
+                if (downKeyPressed){
+                    this.playAnim(charAnims.crouch)
+                } else {
+                    this.playAnim(charAnims.idle);
+                }
                 this.setBodySize(bodySize);
             }
         }
@@ -174,17 +196,18 @@ export class Player {
 
         // handle stomp
         if (downKeyPressed && !this.sprite.body.onFloor()) {
-            this.sprite.body.velocity.y += this.STOMP_SPEED;
+            this.updateVelocityY(this.STOMP_SPEED)
         }
-        this.sprite.body.velocity.y = Math.min(this.sprite.body.velocity.y, this.MAX_STOMP_SPEED);
-        this.sprite.body.velocity.x = this.constrain(
+        this.sprite.setVelocityY(Math.min(this.sprite.body.velocity.y, this.MAX_STOMP_SPEED))
+        this.sprite.setVelocityX(this.constrain(
             this.sprite.body.velocity.x,
             -this.MAX_RUN_SPEED,
             this.MAX_RUN_SPEED,
-        );
+        ));
 
         // handle wall climbing
-        if (this.sprite.body.blocked.left || this.sprite.body.blocked.right) {
+        const onWorldWall = this.sprite.body.left === 0 || this.sprite.body.right === this.MAP_WIDTH
+        if (!onFloor && (this.sprite.body.blocked.left || this.sprite.body.blocked.right) && !onWorldWall) {
             this.sprite.toggleFlipX();
             const nudge = 5;
             if (this.state !== PLAYER_STATE.Walling) {
@@ -193,26 +216,33 @@ export class Player {
                 } else {
                     this.sprite.body.x -= nudge;
                 }
+                this.jumpLock = true
+                setTimeout(()=>{
+                    this.jumpLock = false
+                },150)
             }
-            this.setBodySize(PLAYER_STATE.Walling);
-            // this.lock(300);
-            if (isJump) {
+            if (isJump && !this.jumpLock) {
+                this.jumpLock = false
                 this.sprite.setVelocityY(this.JUMP_SPEED);
-                this.lock(100);
+                this.playAnim(charAnims.jumpRising,true);
+                this.setBodySize(PLAYER_STATE.Standing);
+                this.lock(250)
                 if (this.sprite.body.blocked.right) {
                     this.sprite.setVelocityX(-this.WALL_JUMP_SPEED);
                 } else if (this.sprite.body.blocked.left) {
                     this.sprite.setVelocityX(this.WALL_JUMP_SPEED);
                 }
             } else {
-                this.sprite.body.velocity.y *= this.WALL_DAMPING;
-                this.playAnim(charAnims.wallSlide);
+                this.setBodySize(PLAYER_STATE.Walling);
+                this.playAnim(charAnims.wallSlide,true);
+                this.sprite.setVelocityY(this.sprite.body.velocity.y * this.WALL_DAMPING)
             }
         }
     }
 
-    public playAnim(anim: string) {
+    public playAnim(anim: string,overwrite : boolean = false) {
         this.currAnim = anim;
-        this.sprite.play(anim, true);
+        const ignore = overwrite ? false : true
+        this.sprite.play(anim, ignore);
     }
 }
