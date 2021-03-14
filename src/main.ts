@@ -4,7 +4,7 @@ import Scenes from './scenes';
 const gameConfig: Phaser.Types.Core.GameConfig = {
   title: 'Sample',
 
-  type: Phaser.CANVAS,
+  type: Phaser.AUTO,
 
   scene: Scenes,
   render: {
@@ -15,18 +15,17 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
     width : window.innerWidth,
     autoCenter : Phaser.Scale.CENTER_BOTH,
     height : window.innerHeight,
-    zoom : 2
   },
   physics: {
     default: 'arcade',
     arcade: {
-      debug: true,
-      gravity : { y : 400}
+      // debug : true,
+      gravity : { y : 600}
     },
   },
 
   parent: 'content',
-  backgroundColor: '#000000',
+  backgroundColor: '#412134',
 };
 
 export const game = new Phaser.Game(gameConfig);

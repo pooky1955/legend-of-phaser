@@ -1,7 +1,7 @@
 import { charMapping } from '../data/charFrames';
 import { charAnims } from '../data/charAnims';
 import { animsCount } from '../data/animsCount';
-import { animsRate, defaultRate } from "../data/animsRate"
+import { animsRate, defaultRate } from '../data/animsRate';
 import { log } from '../helpers';
 
 const getFrame = (path, index = 1) => {
@@ -51,7 +51,7 @@ export class Player {
     private scene: Phaser.Scene;
     private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
     private state: PLAYER_STATE;
-    private jumpLock : boolean = false;
+    private jumpLock: boolean = false;
     private RUN_SPEED: number = 40;
     private JUMP_SPEED: number = -300;
     private STOMP_SPEED: number = 60;
@@ -63,24 +63,36 @@ export class Player {
     private locked: boolean = false;
     private PLAYER_WIDTH: number;
     private PLAYER_HEIGHT: number;
-    private MAP_WIDTH : number;
-    private MAP_HEIGHT : number;
+    private MAP_WIDTH: number;
+    private MAP_HEIGHT: number;
+    private spawnX: number;
+    private spawnY: number;
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
         this.cursors = scene.input.keyboard.createCursorKeys();
     }
 
-    public setWorldDims(width,height){
-        this.MAP_WIDTH = width
-        this.MAP_HEIGHT = height
+    public setWorldDims(width, height) {
+        this.MAP_WIDTH = width;
+        this.MAP_HEIGHT = height;
     }
 
     spawn(x: number, y: number) {
         const idlePath = getFrame(charMapping.idle);
-        this.sprite = this.scene.physics.add.sprite(x, y, 'character', getFrame(charMapping.idle));
+        this.spawnX = x;
+        this.spawnY = y;
+        this.sprite = this.scene.physics.add
+            .sprite(0, 0, 'character', getFrame(charMapping.idle))
+            .setOrigin(0.5, 1)
+            .setPosition(x, y);
         this.PLAYER_HEIGHT = JSON.parse(JSON.stringify(this.sprite.body.height));
         this.PLAYER_WIDTH = JSON.parse(JSON.stringify(this.sprite.body.width));
         this.setBodySize(PLAYER_STATE.Standing);
+    }
+
+    respawn() {
+        this.getSprite().setVelocity(0, 0);
+        this.getSprite().setPosition(this.spawnX, this.spawnY);
     }
     setBodySize(state) {
         this.state = state;
@@ -90,11 +102,10 @@ export class Player {
     }
 
     addPlatforms(platforms: Phaser.Tilemaps.TilemapLayer) {
-        this.scene.physics.add.collider(this.sprite, platforms,(sprite,platforms) => {
-            debugger
-        })
+        this.scene.physics.add.overlap(this.sprite, platforms, () => {
+        });
+        this.scene.physics.add.collider(this.sprite, platforms);
     }
-
 
     public static generatePlayerAnims(scene: Phaser.Scene) {
         const range = (n) => new Array(n).fill(0).map((_, i) => i);
@@ -104,7 +115,7 @@ export class Player {
         Object.keys(charAnims).forEach((animName) => {
             const fullAnimName = charMapping[animName];
             const animCount = animsCount[fullAnimName];
-            const rate = animName in animsRate ? animsRate[animName] : defaultRate
+            const rate = animName in animsRate ? animsRate[animName] : defaultRate;
             const frames = generateFrames(fullAnimName, animCount);
             scene.anims.create({ frames: frames, frameRate: rate, repeat: -1, key: animName });
             log(`frames are of ${JSON.stringify(frames)}`);
@@ -114,7 +125,6 @@ export class Player {
     public getSprite(): Phaser.Types.Physics.Arcade.SpriteWithDynamicBody {
         return this.sprite;
     }
-
 
     lock(time: number) {
         this.locked = true;
@@ -133,11 +143,11 @@ export class Player {
         }
     }
 
-    updateVelocityX(number){
-        this.sprite.body.setVelocityX(number + this.sprite.body.velocity.x)
+    updateVelocityX(number) {
+        this.sprite.body.setVelocityX(number + this.sprite.body.velocity.x);
     }
-    updateVelocityY(number){
-        this.sprite.body.setVelocityY(number + this.sprite.body.velocity.y)
+    updateVelocityY(number) {
+        this.sprite.body.setVelocityY(number + this.sprite.body.velocity.y);
     }
     handleKeys() {
         if (this.locked) {
@@ -151,15 +161,15 @@ export class Player {
         const moveAnim = downKeyPressed ? charAnims.roll : charAnims.run;
         const isJump = this.cursors.space.isDown || this.cursors.up.isDown;
         const wannaJump = isJump && onFloor;
-        const bodySize = downKeyPressed  ? PLAYER_STATE.Crouching : PLAYER_STATE.Standing
+        const bodySize = downKeyPressed ? PLAYER_STATE.Crouching : PLAYER_STATE.Standing;
         if (isLeft) {
-            this.updateVelocityX(-this.RUN_SPEED) 
+            this.updateVelocityX(-this.RUN_SPEED);
             if (this.sprite.body.onFloor()) {
                 this.playAnim(moveAnim);
                 this.setBodySize(bodySize);
             }
         } else if (isRight) {
-            this.updateVelocityX(this.RUN_SPEED)
+            this.updateVelocityX(this.RUN_SPEED);
             if (this.sprite.body.onFloor()) {
                 this.playAnim(moveAnim);
                 this.setBodySize(bodySize);
@@ -167,8 +177,8 @@ export class Player {
         } else {
             this.sprite.setVelocityX(0);
             if (onFloor) {
-                if (downKeyPressed){
-                    this.playAnim(charAnims.crouch)
+                if (downKeyPressed) {
+                    this.playAnim(charAnims.crouch);
                 } else {
                     this.playAnim(charAnims.idle);
                 }
@@ -182,6 +192,7 @@ export class Player {
             this.playAnim(jumpAnim);
             this.playAnim(charAnims.jumpRising);
             this.sprite.setVelocityY(this.JUMP_SPEED);
+            this.lock(100);
         }
 
         // handle falling
@@ -196,17 +207,13 @@ export class Player {
 
         // handle stomp
         if (downKeyPressed && !this.sprite.body.onFloor()) {
-            this.updateVelocityY(this.STOMP_SPEED)
+            this.updateVelocityY(this.STOMP_SPEED);
         }
-        this.sprite.setVelocityY(Math.min(this.sprite.body.velocity.y, this.MAX_STOMP_SPEED))
-        this.sprite.setVelocityX(this.constrain(
-            this.sprite.body.velocity.x,
-            -this.MAX_RUN_SPEED,
-            this.MAX_RUN_SPEED,
-        ));
+        this.sprite.setVelocityY(Math.min(this.sprite.body.velocity.y, this.MAX_STOMP_SPEED));
+        this.sprite.setVelocityX(this.constrain(this.sprite.body.velocity.x, -this.MAX_RUN_SPEED, this.MAX_RUN_SPEED));
 
         // handle wall climbing
-        const onWorldWall = this.sprite.body.left === 0 || this.sprite.body.right === this.MAP_WIDTH
+        const onWorldWall = this.sprite.body.left === 0 || this.sprite.body.right === this.MAP_WIDTH;
         if (!onFloor && (this.sprite.body.blocked.left || this.sprite.body.blocked.right) && !onWorldWall) {
             this.sprite.toggleFlipX();
             const nudge = 5;
@@ -216,17 +223,17 @@ export class Player {
                 } else {
                     this.sprite.body.x -= nudge;
                 }
-                this.jumpLock = true
-                setTimeout(()=>{
-                    this.jumpLock = false
-                },150)
+                this.jumpLock = true;
+                setTimeout(() => {
+                    this.jumpLock = false;
+                }, 150);
             }
             if (isJump && !this.jumpLock) {
-                this.jumpLock = false
+                this.jumpLock = false;
                 this.sprite.setVelocityY(this.JUMP_SPEED);
-                this.playAnim(charAnims.jumpRising,true);
+                this.playAnim(charAnims.jumpRising, true);
                 this.setBodySize(PLAYER_STATE.Standing);
-                this.lock(250)
+                this.lock(250);
                 if (this.sprite.body.blocked.right) {
                     this.sprite.setVelocityX(-this.WALL_JUMP_SPEED);
                 } else if (this.sprite.body.blocked.left) {
@@ -234,15 +241,15 @@ export class Player {
                 }
             } else {
                 this.setBodySize(PLAYER_STATE.Walling);
-                this.playAnim(charAnims.wallSlide,true);
-                this.sprite.setVelocityY(this.sprite.body.velocity.y * this.WALL_DAMPING)
+                this.playAnim(charAnims.wallSlide, true);
+                this.sprite.setVelocityY(this.sprite.body.velocity.y * this.WALL_DAMPING);
             }
         }
     }
 
-    public playAnim(anim: string,overwrite : boolean = false) {
+    public playAnim(anim: string, overwrite: boolean = false) {
         this.currAnim = anim;
-        const ignore = overwrite ? false : true
+        const ignore = overwrite ? false : true;
         this.sprite.play(anim, ignore);
     }
 }

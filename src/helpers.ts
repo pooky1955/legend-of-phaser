@@ -9,5 +9,5 @@ export const getGameHeight = (scene: Phaser.Scene): number => {
 };
 
 export const log = (message : string) => {
-  console.log(`%c[INFO]%c: ${message}`,"font-weight : 800")
+  // console.log(`%c[INFO]%c: ${message}`,"font-weight : 800")
 }
