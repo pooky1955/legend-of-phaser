@@ -46,23 +46,32 @@ const sizes = {
         ],
     ],
 };
+
+interface WasdKeys {
+    up: Phaser.Input.Keyboard.Key;
+    down: Phaser.Input.Keyboard.Key;
+    left: Phaser.Input.Keyboard.Key;
+    right: Phaser.Input.Keyboard.Key;
+}
 export class Player {
     private sprite: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     private scene: Phaser.Scene;
     private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
+    private wasdCursors: WasdKeys;
     private state: PLAYER_STATE;
-    private jumpLock: boolean = false;
-    private RUN_SPEED: number = 40;
-    private JUMP_SPEED: number = -300;
-    private STOMP_SPEED: number = 60;
-    private MAX_STOMP_SPEED: number = 600;
-    private MAX_RUN_SPEED: number = 300;
-    private WALL_DAMPING: number = 0.7;
-    private WALL_JUMP_SPEED: number = 150;
+    private jumpLock = false;
+    private RUN_SPEED = 40;
+    private JUMP_SPEED = -300;
+    private STOMP_SPEED = 60;
+    private MAX_STOMP_SPEED = 600;
+    private MAX_RUN_SPEED = 300;
+    private WALL_DAMPING = 0.7;
+    private WALL_JUMP_SPEED = 150;
     private currAnim: string = charAnims.idle;
-    private locked: boolean = false;
+    private locked = false;
     private PLAYER_WIDTH: number;
     private PLAYER_HEIGHT: number;
+    private runDamp = 0.7;
     private MAP_WIDTH: number;
     private MAP_HEIGHT: number;
     private spawnX: number;
@@ -70,6 +79,30 @@ export class Player {
     constructor(scene: Phaser.Scene) {
         this.scene = scene;
         this.cursors = scene.input.keyboard.createCursorKeys();
+        this.wasdCursors = {
+            up: scene.input.keyboard.addKey('w'),
+            left: scene.input.keyboard.addKey('a'),
+            down: scene.input.keyboard.addKey('s'),
+            right: scene.input.keyboard.addKey('d'),
+        };
+    }
+
+    getKeys() {
+        return Object.assign(
+            {},
+            ...Object.keys(this.wasdCursors).map((key) => ({
+                [key]: () => {
+                    return this.wasdCursors[key].isDown || this.cursors[key].isDown;
+                },
+            })),
+        );
+    }
+
+    getRunSpeed() {
+        return this.RUN_SPEED;
+    }
+    getMaxSpeed() {
+        return this.MAX_RUN_SPEED;
     }
 
     public setWorldDims(width, height) {
@@ -102,8 +135,7 @@ export class Player {
     }
 
     addPlatforms(platforms: Phaser.Tilemaps.TilemapLayer) {
-        this.scene.physics.add.overlap(this.sprite, platforms, () => {
-        });
+        this.scene.physics.add.overlap(this.sprite, platforms, () => {});
         this.scene.physics.add.collider(this.sprite, platforms);
     }
 
@@ -154,22 +186,23 @@ export class Player {
             return;
         }
         // handle going left and right
-        const downKeyPressed = this.cursors.down.isDown;
-        const isLeft = this.cursors.left.isDown;
-        const isRight = this.cursors.right.isDown;
+        const downKeyPressed = this.getKeys().down();
+        const isLeft = this.getKeys().left();
+        const isRight = this.getKeys().right();
         const onFloor = this.sprite.body.onFloor();
         const moveAnim = downKeyPressed ? charAnims.roll : charAnims.run;
-        const isJump = this.cursors.space.isDown || this.cursors.up.isDown;
+        const isJump = this.cursors.space.isDown || this.getKeys().up();
         const wannaJump = isJump && onFloor;
         const bodySize = downKeyPressed ? PLAYER_STATE.Crouching : PLAYER_STATE.Standing;
+        const runSpeed = this.getRunSpeed();
         if (isLeft) {
-            this.updateVelocityX(-this.RUN_SPEED);
+            this.updateVelocityX(-runSpeed);
             if (this.sprite.body.onFloor()) {
                 this.playAnim(moveAnim);
                 this.setBodySize(bodySize);
             }
         } else if (isRight) {
-            this.updateVelocityX(this.RUN_SPEED);
+            this.updateVelocityX(runSpeed);
             if (this.sprite.body.onFloor()) {
                 this.playAnim(moveAnim);
                 this.setBodySize(bodySize);
@@ -209,8 +242,9 @@ export class Player {
         if (downKeyPressed && !this.sprite.body.onFloor()) {
             this.updateVelocityY(this.STOMP_SPEED);
         }
+        const maxSpeed = this.getMaxSpeed();
         this.sprite.setVelocityY(Math.min(this.sprite.body.velocity.y, this.MAX_STOMP_SPEED));
-        this.sprite.setVelocityX(this.constrain(this.sprite.body.velocity.x, -this.MAX_RUN_SPEED, this.MAX_RUN_SPEED));
+        this.sprite.setVelocityX(this.constrain(this.sprite.body.velocity.x, -maxSpeed, maxSpeed));
 
         // handle wall climbing
         const onWorldWall = this.sprite.body.left === 0 || this.sprite.body.right === this.MAP_WIDTH;
@@ -247,7 +281,7 @@ export class Player {
         }
     }
 
-    public playAnim(anim: string, overwrite: boolean = false) {
+    public playAnim(anim: string, overwrite = false) {
         this.currAnim = anim;
         const ignore = overwrite ? false : true;
         this.sprite.play(anim, ignore);

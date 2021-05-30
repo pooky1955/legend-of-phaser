@@ -1,4 +1,3 @@
-
 import { getGameHeight, getGameWidth } from '../helpers';
 import { MenuButton } from '../ui/button';
 
@@ -18,18 +17,27 @@ export class WinScene extends Phaser.Scene {
     }
 
     public create(): void {
+        performance.mark('run');
+        const [start, end] = performance.getEntriesByName('run');
+        const seconds = Math.round(end.startTime - start.startTime) / 1000;
+        performance.clearMarks();
         this.createBGs();
         this.add
-            .text(getGameWidth(this) / 2, getGameHeight(this) / 4, `Congratulations! You finished the game!`, {
-                color: '#000000',
-            })
+            .text(
+                getGameWidth(this) / 2,
+                getGameHeight(this) / 4,
+                `Congratulations! You finished the game in ${seconds} seconds!`,
+                {
+                    color: '#000000',
+                },
+            )
             .setFontSize(50)
             .setOrigin(0.5, 0.5);
 
         new MenuButton(this, getGameWidth(this) / 2, getGameHeight(this) / 2, 'Replay Game', () => {
+            performance.mark('run');
             this.scene.start('level1');
-        }).setOrigin(0.5,0.5);
-
+        }).setOrigin(0.5, 0.5);
     }
 
     public createBGs() {

@@ -25,21 +25,25 @@ export class MainMenuScene extends Phaser.Scene {
             .setFontSize(50)
             .setOrigin(0.5, 0.5);
         this.add
-            .text(getGameWidth(this) / 2, 4 * getGameHeight(this) / 5, 'Move with arrow keys\nHold the down arrow to roll\nStomp by holding the down arrow in midair\nWall Jump by moving towards the wall and jumping', {
-                color: '#000000',
-            })
+            .text(
+                getGameWidth(this) / 2,
+                (4 * getGameHeight(this)) / 5,
+                'Move with arrow keys\nHold the down arrow to roll\nStomp by holding the down arrow in midair\nWall Jump by moving towards the wall and jumping',
+                {
+                    color: '#000000',
+                },
+            )
             .setFontSize(28)
             .setOrigin(0.5, 0.5);
 
         new MenuButton(this, getGameWidth(this) / 2, getGameHeight(this) / 2, 'Start Game', () => {
-                let audio = new Audio('assets/audio/song.mp3');
-                audio.loop = true;
-                // audio.muted = true;
-                audio.play();
+            const audio = new Audio('assets/audio/song.mp3');
+            audio.loop = true;
+            // audio.muted = true;
+            audio.play();
 
             this.scene.start('level1');
-        }).setOrigin(0.5,0.5);
-
+        }).setOrigin(0.5, 0.5);
     }
 
     public createBGs() {

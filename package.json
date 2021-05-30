@@ -1,5 +1,5 @@
 {
-  "name": "Legend of Phaser",
+  "name": "legend-of-phaser",
   "version": "1.0.1",
   "description": "A sample project using Phaser 3 and TypeScript",
   "main": "src/main.ts",
@@ -13,7 +13,8 @@
     "dev": "NODE_ENV=development webpack-dev-server",
     "prod": "NODE_ENV=production webpack-dev-server",
     "deploy" : "NODE_ENV=production webpack && cp CNAME dist/ && surge dist/",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "format" :  "prettier --write \"**/*.{js,jsx,ts,tsx}\""
   },
   "dependencies": {
     "clean-webpack-plugin": "^3.0.0",

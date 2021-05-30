@@ -1,13 +1,13 @@
 import * as Phaser from 'phaser';
 
 export const getGameWidth = (scene: Phaser.Scene): number => {
-  return scene.game.scale.width;
+    return scene.game.scale.width;
 };
 
 export const getGameHeight = (scene: Phaser.Scene): number => {
-  return scene.game.scale.height;
+    return scene.game.scale.height;
 };
 
-export const log = (message : string) => {
-  // console.log(`%c[INFO]%c: ${message}`,"font-weight : 800")
-}
+export const log = (message: string) => {
+    // console.log(`%c[INFO]%c: ${message}`,"font-weight : 800")
+};

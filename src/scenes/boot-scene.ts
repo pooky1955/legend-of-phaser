@@ -1,4 +1,5 @@
 import { getGameWidth, getGameHeight } from '../helpers';
+import { maxLevel, range } from './level';
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
     active: false,
@@ -72,7 +73,6 @@ export class BootScene extends Phaser.Scene {
                 this.scene.start('MainMenu');
             }, 1000);
         });
-
         this.loadAssets();
     }
 
@@ -86,7 +86,12 @@ export class BootScene extends Phaser.Scene {
         this.load.image('base_tiles', 'assets/maps/Tileset_extruded.png');
         this.backgroundPaths.forEach(loadAsset);
         this.load.multiatlas('character', 'assets/sprites/character.json');
+        this.load.multiatlas('enemies', 'assets/sprites/enemies.json');
         this.load.atlas('goal', 'assets/sprites/goal.png', 'assets/sprites/goal.json');
         this.load.atlas('spike', 'assets/sprites/spike.png', 'assets/sprites/spike.json');
+        range(maxLevel).forEach((number) => {
+            const levelName = `level${number + 1}`;
+            this.load.tilemapTiledJSON(levelName, `assets/maps/${levelName}.json`);
+        });
     }
 }
