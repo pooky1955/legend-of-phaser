@@ -44,6 +44,10 @@ export class MainMenuScene extends Phaser.Scene {
 
             this.scene.start('level1');
         }).setOrigin(0.5, 0.5);
+
+        new MenuButton(this, getGameWidth(this) / 2, getGameHeight(this) * 0.6, 'Level Selection', () => {
+            this.scene.start('level_selection');
+        }).setOrigin(0.5, 0.5);
     }
 
     public createBGs() {

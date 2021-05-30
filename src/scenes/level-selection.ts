@@ -1,43 +1,31 @@
+
 import { getGameHeight, getGameWidth } from '../helpers';
 import { MenuButton } from '../ui/button';
+import {maxLevel} from './level';
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
     active: false,
     visible: false,
-    key: 'winScene',
+    key: 'level_selection',
 };
 
 /**
  * The initial scene that starts, shows the splash screens, and loads the necessary assets.
  */
-export class WinScene extends Phaser.Scene {
+export class LevelSelectionScene extends Phaser.Scene {
     private backgroundPaths = ['CloudsBack', 'CloudsFront', 'BGBack', 'BGFront'];
     constructor() {
         super(sceneConfig);
     }
 
     public create(): void {
-        performance.mark('run');
-        const [start, end] = performance.getEntriesByName('run');
-        const seconds = Math.round(end.startTime - start.startTime) / 1000;
-        performance.clearMarks();
         this.createBGs();
-        this.add
-            .text(
-                getGameWidth(this) / 2,
-                getGameHeight(this) / 4,
-                `Congratulations! You finished the game in ${seconds} seconds!`,
-                {
-                    color: '#000000',
-                },
-            )
-            .setFontSize(25)
-            .setOrigin(0.5, 0.5);
-
-        new MenuButton(this, getGameWidth(this) / 2, getGameHeight(this) / 2, 'Replay Game', () => {
-            performance.mark('run');
-            this.scene.start('level1');
-        }).setOrigin(0.5, 0.5);
+        for (let i = 0 ; i < maxLevel; i++){
+            const levelNumber = i+1;
+            new MenuButton(this,getGameWidth(this) /2 , getGameHeight(this) * 0.1 + i / (maxLevel + 5) * getGameHeight(this),`Level ${levelNumber}`,() => {
+                this.scene.start(`level${levelNumber}`)
+            }).setOrigin(0.5,0.5)
+        }
     }
 
     public createBGs() {

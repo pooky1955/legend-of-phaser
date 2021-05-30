@@ -169,7 +169,7 @@ export class Level extends Phaser.Scene {
     }
 }
 
-export const maxLevel = 5;
+export const maxLevel = 6;
 export const range = (n) => new Array(n).fill(0).map((_, i) => i);
 
 export const levels = range(maxLevel).map((number) => {

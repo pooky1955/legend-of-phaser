@@ -90,7 +90,7 @@ export class BootScene extends Phaser.Scene {
         this.load.atlas('goal', 'assets/sprites/goal.png', 'assets/sprites/goal.json');
         this.load.atlas('spike', 'assets/sprites/spike.png', 'assets/sprites/spike.json');
         range(maxLevel).forEach((number) => {
-            const levelName = `level${number + 1}`;
+            const levelName = `level${number+1}`;
             this.load.tilemapTiledJSON(levelName, `assets/maps/${levelName}.json`);
         });
     }
